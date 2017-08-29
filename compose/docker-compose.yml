@@ -1,0 +1,35 @@
+testportalelasticsearch:
+   hostname: testportalelasticsearch
+   image: elasticsearch:1.7
+   volumes:
+      - ${CONTAINER_DATA_PATH}/elasticsearch_data_17:/usr/share/elasticsearch/data
+
+testportalpostgres:
+   hostname: testportalpostgres
+   image: postgres:9.3
+   volumes:
+      - ${CONTAINER_DATA_PATH}/postgres_data:/var/lib/postgresql/data
+   ports:
+      - "8432:5432"
+   environment:
+      - POSTGRES_PASSWORD=www001
+      - POSTGRES_USER=wwwadm
+      - POSTGRES_DB=testdb
+
+testportal:
+   hostname: testportal
+   image: sedoo/testportal:${PORTAL_IMAGE_VERSION}
+   volumes:
+      - ${CONTAINER_DATA_PATH}/sites:/sites
+      - ${CONTAINER_DATA_PATH}/apache2/ssl:/etc/apache2/ssl
+      - ${CONTAINER_DATA_PATH}/apache2/logs:/var/log/apache2
+   ports:
+      - "8484:80"
+      - "8485:443"
+   links:
+      - testportalelasticsearch:elastic
+      - testportalpostgres:postgres
+   environment:
+      - APACHE_RUN_DIR=/var/run/apache2
+#   extra_hosts:
+#      - "passy:127.0.0.1"

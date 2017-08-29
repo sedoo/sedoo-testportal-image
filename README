@@ -1,0 +1,80 @@
+* Pour construire l'image :
+
+docker build -t sedoo/testportal .
+
+
+* Pour lancer les containers :
+
+Aller dans compose/
+
+Les répertoires contenant les données des containers seront dans CONTAINER_DATA_PATH.
+Dans ce répertoire, on trouvera :
+ - apache2 : conf (sites) et logs du serveur apache
+ - elasticsearch_data_17  : données du container elastic search
+ - postgres_data : données du container postgres
+ - sites : répertoire de travail où l'on pourra déployer les portails
+
+export CONTAINER_DATA_PATH=<chemin>
+docker-compose up testportal
+
+(docker-compose lance automatiquement postgres et elastic)
+
+Par défaut, CONTAINER_DATA_PATH est /data/testportal_data.
+
+Sur l'hote, les containers sont accessibles sur les ports suivants :
+- 8484 : HTTP
+- 8485 : HTTPS
+- 8432 : postgres
+
+
+* Pour se connecter au container (terminal) :
+
+docker exec -ti portalgenerator_testportal_1 /bin/bash
+
+
+
+* Exemple de test du portal generator :
+
+Sur l'hote :
+
+php portalGeneratorV2.php input/passy.xml --skip-ldap --skip-backup
+cp -R target/ /data/testportal_data/sites/
+docker exec -ti portalgenerator_testportal_1 /bin/bash
+
+Sur le container :
+Créer le certificat (voir ci-dessous)
+
+cd target/
+./install.sh
+
+
+* Création d'un certificat autosigné :
+sudo openssl req -x509 -nodes -days 365 -newkey rsa:1024 \
+ -out /etc/apache2/ssl/toto.crt -keyout /etc/apache2/ssl/toto.key \
+ -subj "/C=FR/ST=Toulouse/L=Toulouse/O=OMP/OU=SEDOO/CN=toto.sedoo.fr"
+ 
+ 
+* Conf pour rediriger les ports http et https de l'hote vers ceux du container docker :
+
+ <VirtualHost *:80>
+  ProxyPreserveHost On
+  ProxyRequests Off
+  ServerName toto
+  ProxyPass / http://localhost:8484/
+  ProxyPassReverse / http://localhost:8484/
+</VirtualHost>
+
+<VirtualHost *:443>
+   SSLEngine on
+   SSLProxyEngine on
+   SSLCertificateFile /data/testportal_data/apache2/ssl/toto.crt
+   SSLCertificateKeyFile /data/testportal_data/apache2/ssl/toto.key
+
+  ProxyPreserveHost On
+  ProxyRequests Off
+  ServerName toto
+  ProxyPass / https://localhost:8485/
+  ProxyPassReverse / https://localhost:8485/
+</VirtualHost>
+ 
+ 
