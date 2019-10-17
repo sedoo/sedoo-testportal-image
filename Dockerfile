@@ -33,6 +33,8 @@ RUN curl -sLo sedoo-metadata.zip https://github.com/sedoo/sedoo-metadata-php/arc
 				
 RUN docker-php-ext-install pgsql
 
+RUN docker-php-ext-install mbstring 
+
 RUN docker-php-ext-configure ldap --with-libdir=lib/x86_64-linux-gnu
 RUN docker-php-ext-install ldap
 
